@@ -9,7 +9,7 @@ import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# EMA usage below targets the modern diffusers EMAModel API (tested with diffusers 0.37.x)
+# EMA usage below targets the modern diffusers EMAModel API (tested with diffusers 0.37.1)
 from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
 from diffusers.schedulers.scheduling_ddim import DDIMScheduler
 from diffusers.training_utils import EMAModel

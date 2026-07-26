@@ -99,11 +99,8 @@ class EnvRobosuite(EB.EnvBase):
 
         if self._is_v1:
             if kwargs["has_offscreen_renderer"]:
-                # ensure that we select the correct GPU device for rendering by testing for EGL rendering.
-                # egl_probe (https://github.com/StanfordVL/egl_probe) is preferred when available, but it
-                # requires a working cmake at install time, which is not present on all clusters. Fall back
-                # to the MUJOCO_EGL_DEVICE_ID env var (default 0), matching the convention used elsewhere
-                # in this repo (e.g. scripts/dataset_states_to_obs_mp.py).
+                # egl_probe (https://github.com/StanfordVL/egl_probe) is preferred when available.
+                # Fall back to the MUJOCO_EGL_DEVICE_ID env var (default 0).
                 render_gpu_device_id = None
                 try:
                     import egl_probe

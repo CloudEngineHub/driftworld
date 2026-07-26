@@ -42,9 +42,6 @@ Example usage:
 
     # download all real robot datasets
     python download_datasets.py --tasks real
-
-My usage:
-    python robomimic/scripts/download_datasets.py --tasks lift --dataset_types mh --hdf5_types image
 """
 import os
 import argparse

@@ -450,27 +450,11 @@ class SequenceDataset(torch.utils.data.Dataset):
     def get_item(self, index):
         """
         Main implementation of getitem when not using cache.
-        Args:
-            index (int): Global index of the sequence to fetch across the entire dataset.
-        Returns:
-            meta: A dictionary containing the fetched sequence data.
-                - obs (dict): dict of observation sequences, where each value is a (T, ...) np array with T = frame_stack - 1 + seq_length
-                              If language is used, also includes lang_emb with shape (T, D_lang).
-                - next_obs (dict): dict of next observation sequences, where each value is a (T, ...) np array
-                              Only present if self.load_next_obs is True.
-                - goal_obs (dict, optional): dict of goal observations, where each value is a np array
-                              Only present if `self.goal_mode` is "last".
-                - actions (np.ndarray): Concatenated and normalized action sequences. Shape (T, D_action).
-                - index (int): The requested global index.
-                - pad_mask (np.ndarray, optional): Boolean array of shape (T, 1) indicating padded frames.
-                              Only present if `self.get_pad_mask` is True.
-                - <dataset_key> (np.ndarray): For any additional key in self.dataset_keys (e.g., "rewards", "dones", "actions"),
-                  the unnormalized sequence of values. Shape (T, ...).
         """
 
         demo_id = self._index_to_demo_id[index]
-        demo_start_index = self._demo_id_to_start_indices[demo_id] # global start index of this demo
-        demo_length = self._demo_id_to_demo_length[demo_id] # length of this demo
+        demo_start_index = self._demo_id_to_start_indices[demo_id]
+        demo_length = self._demo_id_to_demo_length[demo_id]
 
         # start at offset index if not padding for frame stacking
         demo_index_offset = 0 if self.pad_frame_stack else (self.n_frame_stack - 1)

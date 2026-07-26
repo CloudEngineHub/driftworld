@@ -21,9 +21,6 @@ Example usage:
 
     # run script only on validation data
     python get_dataset_info.py --dataset ../../tests/assets/test.hdf5 --filter_key valid
-
-My usage:
-    python scripts/get_dataset_info.py --dataset datasets/lift/mh/image.hdf5
 """
 import h5py
 import json
