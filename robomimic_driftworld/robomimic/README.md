@@ -5,3 +5,4 @@ This folder contains a slightly modified version of the [Robomimic v0.5 library]
 You can download and process the dataset by running
 - `download_raw_data.sh`
 - and then `extract_obs_from_raw_data.sh`
+- and then `create_split.sh`

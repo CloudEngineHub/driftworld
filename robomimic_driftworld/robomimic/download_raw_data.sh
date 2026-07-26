@@ -1,9 +1,15 @@
-#!/bin/bash
+# Download a robomimic raw demo hdf5 from Hugging Face
+# Usage: bash download_raw_data.sh [task]
+#   task:    lift | can
 
-URL="https://huggingface.co/datasets/robomimic/robomimic_datasets/resolve/main/v1.5/lift/mh/demo_v15.hdf5"
-FILENAME="demo_v15.hdf5"
+TASK="${1:-lift}"
 
-echo "Downloading $FILENAME from Hugging Face..."
+URL="https://huggingface.co/datasets/robomimic/robomimic_datasets/resolve/main/v1.5/${TASK}/mh/demo_v15.hdf5"
+OUT_DIR="./datasets/${TASK}/mh"
+FILENAME="${OUT_DIR}/demo_v15.hdf5"
+
+mkdir -p "$OUT_DIR"
+echo "Downloading ${TASK}/mh/demo_v15.hdf5 from Hugging Face..."
 
 if command -v curl &> /dev/null; then
     echo "Using curl"

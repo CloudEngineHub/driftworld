@@ -25,7 +25,7 @@ data:
   num_future: 2
   new_size: 96
   hdf5_cache_mode: low_dim
-  filter_by_attribute: null
+  filter_by_attribute: train
   normalize_img: True
 
 dataloader:
