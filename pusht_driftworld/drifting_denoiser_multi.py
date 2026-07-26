@@ -3,7 +3,6 @@ DriftWorld: Drifting denoiser, which contains the forward pass, drifting loss, a
 """
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import logging
 from collections import defaultdict
 import copy
@@ -24,7 +23,7 @@ class Denoiser(nn.Module):
                  temp_list: tuple, # temperatures for drifting loss
                  n_neg: int, # number of negative samples for drifting loss
                  num_future_frames: int, # number of future frames to predict
-                 num_history_frames: int, # number current+history frames to condition on
+                 num_history_frames: int, # number of current+history frames to condition on
                  decay: float, # EMA decay
                  ) -> None:
         super().__init__()

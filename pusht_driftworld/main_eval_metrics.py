@@ -1,5 +1,5 @@
 """
-Main for evaluating visual quality metrics for DriftWorld's rollouts on Push-T
+Main for evaluating visual quality metrics for DriftWorld's generation on Push-T
 """
 
 import logging

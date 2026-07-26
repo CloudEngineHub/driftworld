@@ -1,5 +1,5 @@
 """
-Visualize (generate + save) DriftWorld rollouts on Push-T.
+Visualize DriftWorld's generated videos on Push-T.
 """
 import os
 import logging

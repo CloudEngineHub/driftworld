@@ -1,8 +1,8 @@
 """
-Training loop for DriftWorld on Push-T
+Training loop for DriftWorld on Robomimic
 """
 import os
-os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import torch
 torch.set_float32_matmul_precision('high')
 import numpy as np
@@ -15,7 +15,7 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
 
-from data.pushT_dataloader import get_pushT_loader
+from data.create_robomimic_loader import get_dataloader
 from utils_model import create_model
 
 log = logging.getLogger(__name__)
@@ -53,6 +53,7 @@ def set_seed(seed):
         torch.cuda.manual_seed(seed)
     return seed
 
+
 def train(cfg):
     """
     Train model, given hydra config cfg. Multi-GPU via torchrun + DDP.
@@ -65,8 +66,8 @@ def train(cfg):
     set_seed(cfg.train.seed)
 
     if is_main():
-        log.info("Creating dataloader")
-    dataloader = get_pushT_loader(cfg, rank=rank, world_size=world_size)
+        log.info("Creating dataloader") # camera views are selected by cfg.model.unet_type
+    dataloader = get_dataloader(cfg, rank=rank, world_size=world_size)
 
     if is_main():
         log.info("Creating model")
@@ -99,7 +100,7 @@ def train(cfg):
     )
 
     actual_step = 0 # current step
-    to_skip = False # Whether to skip to the correct location in dataloader
+    to_skip = False # whether to skip to the correct location in dataloader
 
     if is_main():
         log.info("Creating model / Restoring checkpoint")
@@ -108,7 +109,7 @@ def train(cfg):
 
     # Load checkpoint
     if os.path.exists(cfg.path_ckpt_latest):
-        ckpt = torch.load(cfg.path_ckpt_latest, map_location="cpu", weights_only=False)
+        ckpt = torch.load(cfg.path_ckpt_latest, map_location="cpu", weights_only=True)
         inner.load_state_dict(ckpt['model'])
         optimizer.load_state_dict(ckpt['optimizer'])
         scheduler.load_state_dict(ckpt['scheduler'])
@@ -118,9 +119,9 @@ def train(cfg):
             log.info(f"Restored from step {actual_step} ckpt")
         if actual_step % len(dataloader) != 0:
             to_skip = True
-    elif cfg.model.is_phase_2 == True and os.path.exists(cfg.path_ckpt_phase1):
+    elif getattr(cfg.model, 'is_phase_2', False) and os.path.exists(cfg.path_ckpt_phase1):
         # Just started phase 2, so load from phase 1 checkpoint
-        ckpt = torch.load(cfg.path_ckpt_phase1, map_location="cpu", weights_only=False)
+        ckpt = torch.load(cfg.path_ckpt_phase1, map_location="cpu", weights_only=True)
         inner.load_state_dict(ckpt['model'])
         if is_main():
             log.info(f"Restored from phase 1's step {ckpt['step']} ckpt to begin phase 2 training")
@@ -177,12 +178,10 @@ def train(cfg):
                 elif cur_step == actual_step:
                     to_skip = False
 
-            if cfg.data.normalize_img:
-                nbatch['image'] = (nbatch['image'] - 0.5) / 0.5 # to [-1,1] range
             if first_pass and is_main():
-                log.info(f"batch[image]: {nbatch['image'].shape} | {nbatch['image'].min()} | {nbatch['image'].max()}")
-                log.info(f"batch[action]: {nbatch['action'].shape} | {nbatch['action'].min()} | {nbatch['action'].max()}")
-            first_pass = False
+                log.info(f"batch[obs][agentview_image]: {nbatch["obs"]["agentview_image"].shape} | {nbatch["obs"]["agentview_image"].min()} | {nbatch["obs"]["agentview_image"].max()} | {nbatch["obs"]["agentview_image"].dtype}")
+                log.info(f"batch[action]: {nbatch["actions"].shape} | {nbatch["actions"].min()} | {nbatch["actions"].max()} | {nbatch["actions"].dtype}")
+                first_pass = False
 
             loss, metrics = denoiser(nbatch, device)
 
@@ -194,7 +193,6 @@ def train(cfg):
             inner.update_ema()
 
             metrics['lr'] = scheduler.get_last_lr()[0]
-
             if is_main():
                 wandb.log(metrics, step=actual_step)
                 log.info(f"(epoch {epoch_idx}) (batch {batch_idx}/{len(dataloader)})")

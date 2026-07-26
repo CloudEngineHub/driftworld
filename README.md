@@ -1,7 +1,7 @@
 <div align="center">
 <h2 style="margin-bottom: 0.3em;">DriftWorld: Fast World Modeling through Drifting</h2>
 <p style="margin: 0.3em 0;">Susie Lu, Haonan Chen, Weirui Ye, Yilun Du</p>
-<p style="margin: 0.3em 0;"><a href="https://arxiv.org/abs/2607.15065">Paper</a> | <a href="https://susie-lu.github.io/driftworld/">Project Page</a></p>
+<p style="margin: 0.3em 0;"><a href="https://arxiv.org/abs/2607.15065">Paper</a> | <a href="https://susie-lu.github.io/driftworld/">Project Page</a> </p>
 </div>
 
 This codebase contains the official implementation for the DriftWorld paper.
@@ -10,18 +10,18 @@ This codebase contains the official implementation for the DriftWorld paper.
 
 ### Setup and Checkpoints
 
-You can install the relevant libraries by running `conda env create -f driftworld/environment.yml`. DriftWorld checkpoints can be downloaded at [this HuggingFace link](https://huggingface.co/Susie-Lu/driftworld). Currently it contains the Push-T DriftWorld checkpoints.
+You can install the relevant libraries by running `conda env create -f environment.yml`. DriftWorld checkpoints can be downloaded at [this HuggingFace link](https://huggingface.co/Susie-Lu/driftworld). Currently it contains the DriftWorld checkpoints for Push-T and Robomimic.
 
 | Dataset | Code |
 |---|---|
-| [Push-T Dataset](https://huggingface.co/datasets/han2019/gpc_pushT_data/tree/main/world_model_data) | Code in [`driftworld`](https://github.com/Susie-Lu/driftworld/tree/main/driftworld) folder |
-| [Robomimic Dataset](https://huggingface.co/datasets/robomimic/robomimic_datasets/tree/main/v1.5) | Code will be added soon |
-| [Bridge-V2 Dataset](https://rail.eecs.berkeley.edu/datasets/bridge_release/data/tfds/bridge_dataset/) | Code will be added soon |
-| [RT-1 Dataset](https://console.cloud.google.com/storage/browser/gresearch/robotics/fractal20220817_data/0.1.0) | Code will be added soon |
-| [Language Table Dataset](https://huggingface.co/datasets/IPEC-COMMUNITY/language_table_lerobot/tree/main) | Code will be added soon |
+| [Push-T Dataset](https://huggingface.co/datasets/han2019/gpc_pushT_data/tree/main/world_model_data) | In [`pusht_driftworld`](https://github.com/Susie-Lu/driftworld/tree/main/pusht_driftworld) folder |
+| [Robomimic Dataset](https://huggingface.co/datasets/robomimic/robomimic_datasets/tree/main/v1.5) | In [`robomimic_driftworld`](https://github.com/Susie-Lu/driftworld/tree/main/robomimic_driftworld) folder |
+| [Bridge-V2 Dataset](https://rail.eecs.berkeley.edu/datasets/bridge_release/data/tfds/bridge_dataset/) | Will be added soon |
+| [RT-1 Dataset](https://console.cloud.google.com/storage/browser/gresearch/robotics/fractal20220817_data/0.1.0) | Will be added soon |
+| [Language Table Dataset](https://huggingface.co/datasets/IPEC-COMMUNITY/language_table_lerobot/tree/main) | Will be added soon |
 
 ### DriftWorld on Push-T
-The folder `driftworld` contains the code for training and evaluating DriftWorld on Push-T. Please put the pretrained checkpoints in the folder `driftworld/pusht_checkpoints`, and put the dataset in the folder `driftworld/pusht_data`.
+The folder `pusht_driftworld` contains the code for training and evaluating DriftWorld on Push-T. Please put the pretrained checkpoints in the folder `pusht_driftworld/pusht_checkpoints`, and put the dataset in the folder `pusht_driftworld/pusht_data`.
 
 **To train DriftWorld:**
 - Run `torchrun --nproc_per_node=2 main_train.py --config-name=pushT_driftworld`. Experiments were run on 2 H100 GPUs.
@@ -37,6 +37,18 @@ The folder `driftworld` contains the code for training and evaluating DriftWorld
 
 **To evaluate DriftWorld's performance on policy evaluation:** 
 - Run `python main_policy_eval.py`. This will compute the IoU scores of the policy when rolled out in DriftWorld, compared to the ground-truth IoU scores.
+
+### DriftWorld on Robomimic
+The folder `robomimic_driftworld` contains the code for training and evaluating DriftWorld on the Robomimic tasks. Please put the pretrained checkpoints in the folder `robomimic_driftworld/robomimic_checkpoints`, and set up the dataset by following [this](https://github.com/Susie-Lu/driftworld/blob/main/robomimic_driftworld/robomimic/README.md).
+
+**To train DriftWorld:**
+- Run `torchrun --nproc_per_node=2 main_train.py --config-name=<config name>` with one of the configs in `robomimic_driftworld/configs/train`.
+
+**To visualize generated videos:**
+- Run `python main_vis.py` to generate videos using DriftWorld.
+
+**To evaluate visual quality metrics:**
+- Run `python main_eval_metrics.py`. This will compute the SSIM, PSNR, and LPIPS metrics on the generated videos.
 
 ### DriftWorld on the other datasets
 Will be added soon!

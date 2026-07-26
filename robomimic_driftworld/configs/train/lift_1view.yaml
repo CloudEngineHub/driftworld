@@ -1,0 +1,51 @@
+model:
+  dir_name: lift_1view
+  unet_type: "multi"
+  num_future_frames: 2
+  num_history_frames: 4
+  temp_list: [0.02, 0.05, 0.2]
+  n_neg: 32
+
+train:
+  seed: 1
+  num_epochs: 300
+  ckpt_every: 500
+  decay: 0.999
+
+opt:
+  beta2: 0.95
+  lr: 0.000025
+  weight_decay: 0.01
+  warmup_steps: 500
+  grad_clip: 2.0
+
+data:
+  hdf5_path: ./datasets/lift/mh/image_v15.hdf5 # Robomimic Lift dataset
+  num_history: 3 # data.num_history = model.num_history_frames - 1
+  num_future: 2
+  new_size: 96
+  hdf5_cache_mode: low_dim
+  filter_by_attribute: null
+  normalize_img: True
+
+dataloader:
+  batch_size: 2
+  num_workers: 4
+  prefetch_factor: 2
+  shuffle: True
+  pin_memory: True
+
+wandb_info:
+  entity: "" # your wandb entity
+  project: "Robomimic"
+  name: "${model.dir_name}"
+  saved_run_id: "${output_dir}/wandb_run_id.json"
+  key: ""
+
+hydra:
+  run:
+    dir: "${output_dir}/${now:%Y-%m-%d}/${now:%H-%M-%S}"
+
+output_dir: "./robomimic_checkpoints/${model.dir_name}"
+path_ckpt_latest: "${output_dir}/ckpt-latest.pth"
+path_ckpt_2nd_latest: "${output_dir}/ckpt-2nd-latest.pth"
