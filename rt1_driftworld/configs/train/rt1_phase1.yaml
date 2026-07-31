@@ -1,0 +1,75 @@
+model:
+  dir_name: rt1_phase1
+  inner_model_cfg: RT1_UNet
+  is_phase_2: False
+  
+  temp_list: [0.02, 0.05]
+  n_neg: 64
+  chunk_size: 1
+
+  use_dinov3: True
+  latent_loss_type: latent_spatial
+
+  # accentuated action following
+  unet_1frame_spec: "cfg"
+  cfg_alpha: 6.0
+
+  # alpha sampling distribution
+  cfg_min: 1.0
+  cfg_max: 4.0
+  neg_cfg_pw: 1.0
+  no_cfg_frac: 0.1
+
+dinov3:
+  model_name: dinov3_vitb16
+  repo_dir: ./z_dinov3_utils/dinov3 # local clone of facebookresearch/dinov3
+  weights: ./z_dinov3_utils/dinov3_vitb16_pretrain_lvd1689m.pth # local path to DINOv3 checkpoint
+  source: local
+  input_size: 256
+  block_indices: [2, 5, 8]
+  motion_mask_qhi: 0.98
+  motion_mask_tau: 0.35
+  motion_mask_alpha: 2.5
+  motion_mask_lambda: 12.0
+
+train:
+  seed: 1
+  num_epochs: 300
+  ckpt_every: 200
+  decay: 0.999
+
+opt:
+  beta2: 0.95
+  lr: 0.000025
+  weight_decay: 0.01
+  warmup_steps: 500
+  grad_clip: 2.0
+
+dataloader:
+  batch_size: 1
+  num_workers: 6
+  prefetch_factor: 2
+  pin_memory: True
+
+rt1:
+  dataset_dir: ./rt1/processed
+  n_frames: 5
+  action_dim: 10
+  subset_names: ""
+  input_h: 256
+  input_w: 256
+
+wandb_info:
+  entity: "" # your wandb entity
+  project: "RT1"
+  name: "${model.dir_name}"
+  saved_run_id: "${output_dir}/wandb_run_id.json"
+  key: ""
+
+hydra:
+  run:
+    dir: "${output_dir}/${now:%Y-%m-%d}/${now:%H-%M-%S}"
+
+output_dir: "./rt1_checkpoints/${model.dir_name}"
+path_ckpt_latest: "${output_dir}/ckpt-latest.pth"
+path_ckpt_2nd_latest: "${output_dir}/ckpt-2nd-latest.pth"

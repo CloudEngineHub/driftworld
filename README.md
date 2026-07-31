@@ -10,14 +10,14 @@ This codebase contains the official implementation for the DriftWorld paper.
 
 ### Setup and Checkpoints
 
-You can install the relevant libraries by running `conda env create -f environment.yml`. DriftWorld checkpoints can be downloaded at [this HuggingFace link](https://huggingface.co/Susie-Lu/driftworld). Currently it contains the DriftWorld checkpoints for Push-T and Robomimic.
+You can install the relevant libraries by running `conda env create -f environment.yml`. DriftWorld checkpoints can be downloaded at [this HuggingFace link](https://huggingface.co/Susie-Lu/driftworld). Currently it contains the DriftWorld checkpoints for Push-T, Robomimic, and RT-1 datasets.
 
 | Dataset | Code |
 |---|---|
 | [Push-T Dataset](https://huggingface.co/datasets/han2019/gpc_pushT_data/tree/main/world_model_data) | In [`pusht_driftworld`](https://github.com/Susie-Lu/driftworld/tree/main/pusht_driftworld) folder |
 | [Robomimic Dataset](https://huggingface.co/datasets/robomimic/robomimic_datasets/tree/main/v1.5) | In [`robomimic_driftworld`](https://github.com/Susie-Lu/driftworld/tree/main/robomimic_driftworld) folder |
+| [RT-1 Dataset](https://console.cloud.google.com/storage/browser/gresearch/robotics/fractal20220817_data/0.1.0) | In [`rt1_driftworld`](https://github.com/Susie-Lu/driftworld/tree/main/rt1_driftworld) folder |
 | [Bridge-V2 Dataset](https://rail.eecs.berkeley.edu/datasets/bridge_release/data/tfds/bridge_dataset/) | Will be added soon |
-| [RT-1 Dataset](https://console.cloud.google.com/storage/browser/gresearch/robotics/fractal20220817_data/0.1.0) | Will be added soon |
 | [Language Table Dataset](https://huggingface.co/datasets/IPEC-COMMUNITY/language_table_lerobot/tree/main) | Will be added soon |
 
 ### DriftWorld on Push-T
@@ -49,6 +49,21 @@ The folder `robomimic_driftworld` contains the code for training and evaluating 
 
 **To evaluate visual quality metrics:**
 - Run `python main_eval_metrics.py`. This will compute the SSIM, PSNR, and LPIPS metrics on the generated videos.
+
+### DriftWorld on RT-1
+The folder `rt1_driftworld` contains the code for training and evaluating DriftWorld on the RT-1 dataset. Please put the pretrained checkpoint in the folder `rt1_driftworld/rt1_checkpoints`, and set up the dataset by following [this](https://github.com/Susie-Lu/driftworld/blob/main/rt1_driftworld/datasets/README.md).
+
+**To train DriftWorld:**
+- Run `torchrun --nproc_per_node=2 main_train.py --config-name=rt1_phase1` for phase 1 training, and then run `torchrun --nproc_per_node=2 main_train.py --config-name=rt1_phase2` for phase 2 self-forcing training. Experiments were run on 2 H200 GPUs.
+
+**To visualize generated videos:**
+- Run `python main_vis.py` to generate videos using DriftWorld.
+
+**To evaluate visual quality metrics:**
+- Run `script/eval_on_validation.sh`. This will compute the SSIM, PSNR, LPIPS, FID, and FVD metrics on the generated videos.
+
+**About the pretrained checkpoint:**
+- On RT-1, DriftWorld uses DINOv3 ViT-B/16 and the SD3 VAE during training, and it uses the SD3 VAE during inference. These two need to be downloaded separately. The pretrained DriftWorld checkpoint does not contain DINOv3 or SD3 VAE.
 
 ### DriftWorld on the other datasets
 Will be added soon!
