@@ -138,11 +138,11 @@ def train(cfg):
     )
 
     if is_main():
-        log.info("Creating model (self-forcing per-step/per-chunk-backward variant)")
+        log.info("Creating model (self-forcing variant)")
     denoiser = create_model_selfforce(cfg, device)
 
     if is_main():
-        log.info("Forward pass: Phase 2 self-forcing (PER-STEP backward)")
+        log.info("Forward pass: Phase 2 self-forcing")
     denoiser.forward = denoiser.phase2_step
 
     if world_size > 1:

@@ -1,20 +1,13 @@
 """
-CFG denoiser multi-GPU eval -- per-shard generation + per-video metrics (RT-1).
+Evaluate visual quality metrics on the RT-1 validation set
+This file supports launching on multiple single-GPU machine to speed up the evaluation process.
 
-Crash-safe: rerunning the exact same command on a new GPU loads the previously written
-shard JSON, verifies each stem's on-disk artifacts, skips the ones that are fully
-complete, and regenerates only what's missing. So if a shard's GPU is preempted mid-run,
-just rerun the same command and it auto-continues.
-
-Rollout is chunked autoregressive via sample_autoregressive(...): generate
---chunk-gen-frames frames autoregressively, then re-anchor history on ground truth and
-repeat.
-
+Example: Launch
     python -m eval.eval_on_validation_shard \
-        --config-path <hydra cfg> --step 100000 \
-        --rank 0 --world-size 8 --cfg-scale 1.5
-
-Dataset-level FID/FVD live in eval_on_validation_aggregate.py.
+        --config-path configs/sample/rt1_release.yaml --step 29400 \
+        --rank 0 --world-size 1 --cfg-scale 2.5 --chunk-gen-frames 8
+You can set a world size > 1 to use more than 1 GPU.
+After all ranks are done, run eval_on_validation_aggregate.py to aggregate the metrics.
 """
 import json
 import time

@@ -1,26 +1,11 @@
 """
-CFG denoiser multi-GPU eval -- POST-HOC aggregation + FID + FVD.
+Aggregator for evaluating visual quality metrics on the RT-1 validation set.
+Run after all shards of eval_on_validation_shard.py have completed.
 
-Run this AFTER all `world_size` ranks of eval_on_validation_shard.py
-have finished and written their shards/done_rank{N}_of{M}.flag.
-
+Example: Launch
     python -m eval.eval_on_validation_aggregate \
-        --config-path <same hydra cfg the shards used> \
-        --step 100000 --world-size 8 --cfg-scale 1.5
-
-Pass the same --chunk-gen-frames the shards used so the run_root resolves correctly.
-
-The script:
-  1. Resolves the same run_root the shards wrote to.
-  2. Verifies all `world_size` shards completed (per-rank flag + JSON) and
-     used the same actual_step.
-  3. Aggregates per-video SSIM/PSNR/LPIPS into means + stds.
-  4. Runs pytorch-fid as a subprocess over pred_frames/ vs gt_frames/.
-     Path: cfg.eval.pytorch_fid_dir/src/pytorch_fid/fid_score.py
-  5. Runs stylegan-v calc_metrics_for_dataset.py with --metrics fvd2048_16f
-     over pred_first16/ vs gt_first16/.
-     Path: cfg.eval.stylegan_v_dir/src/scripts/calc_metrics_for_dataset.py
-  6. Writes aggregate_summary.json under the run_root.
+        --config-path configs/sample/rt1_release.yaml --step 29400 \
+        --world-size 1 --cfg-scale 2.5 --chunk-gen-frames 8
 """
 import re
 import sys
