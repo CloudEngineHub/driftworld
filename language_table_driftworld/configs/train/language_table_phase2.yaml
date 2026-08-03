@@ -1,0 +1,64 @@
+model:
+  dir_name: language_table_phase2
+  inner_model_cfg: LT_UNet
+  is_phase_2: True
+  temp_list: [0.02, 0.05]
+  n_neg: 32
+  vae_type: sd3
+  chunk_size: 1
+  latent_loss_type: latent_spatial
+
+mask:
+  motion_mask_qhi: 0.97
+  motion_mask_tau: 0.12
+  motion_mask_alpha: 2.5
+  motion_mask_lambda: 6.0
+
+train:
+  seed: 1
+  num_epochs: 300
+  ckpt_every: 200
+  decay: 0.999
+
+opt:
+  beta2: 0.95
+  lr: 0.000025
+  weight_decay: 0.01
+  warmup_steps: 500
+  grad_clip: 2.0
+
+dataloader:
+  batch_size: 6
+  num_workers: 6
+  prefetch_factor: 2
+  pin_memory: True
+
+language_table:
+  dataset_root: ./language_table
+  n_frames: 8
+  frame_skip: 1
+  action_dim: 2
+  action_scale: 10.0
+  input_h: 192
+  input_w: 256
+  val_episodes_file: ./dataset/valid_videos_2500.json
+
+eval:
+  pytorch_fid_dir: ./z_libraries/pytorch-fid
+  stylegan_v_dir: ./z_libraries/stylegan-v
+
+wandb_info:
+  entity: "" # your wandb entity
+  project: "LanguageTable"
+  name: "${model.dir_name}"
+  saved_run_id: "${output_dir}/wandb_run_id.json"
+  key: ""
+
+hydra:
+  run:
+    dir: "${output_dir}/${now:%Y-%m-%d}/${now:%H-%M-%S}"
+
+output_dir: "./language_table_checkpoints/${model.dir_name}"
+path_ckpt_latest: "${output_dir}/ckpt-latest.pth"
+path_ckpt_2nd_latest: "${output_dir}/ckpt-2nd-latest.pth"
+path_ckpt_phase1: "./language_table_phase1/ckpt_save/ckpt-latest.pth"

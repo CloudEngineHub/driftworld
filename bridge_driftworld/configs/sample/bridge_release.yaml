@@ -1,0 +1,82 @@
+# Sampling config for the released Bridge DriftWorld checkpoint
+
+# Checkpoints saved during training contain DINOv3 and SD3 VAE weights.
+# The released checkpoint has DINOv3 and SD3 VAE removed (since they are from gated repos), so they are disabled below.
+# This does not affect sampling because (i) DINOv3 is not used at inference time
+# and (ii) SD3 VAE is separately fetched from HuggingFace during run time.
+
+model:
+  dir_name: bridge_release
+  inner_model_cfg: Bridge_UNet
+  is_phase_2: True
+
+  temp_list: [0.02, 0.05]
+  n_neg: 64
+  chunk_size: 1
+
+  # Loss-side only; off for inference.
+  use_dinov3: False
+  latent_loss_type: null
+
+  film_actions: True
+  action_token_mode: per_frame_component
+  action_token_dim: 256
+
+  # accentuated action following
+  unet_1frame_spec: "cfg"
+  use_action_cfg: True
+  cfg_alpha: 6.0
+  cfg_velocity: False
+
+  # alpha sample distribution
+  cfg_min: 1.0
+  cfg_max: 4.0
+  neg_cfg_pw: 1.0
+  no_cfg_frac: 0.1
+
+train:
+  seed: 1
+  num_epochs: 300
+  ckpt_every: 200
+  decay: 0.999
+
+opt:
+  beta2: 0.95
+  lr: 0.000025
+  weight_decay: 0.01
+  warmup_steps: 500
+  grad_clip: 2.0
+
+dataloader:
+  batch_size: 1
+  num_workers: 6
+  prefetch_factor: 2
+  pin_memory: True
+
+bridge:
+  dataset_dir: "./bridge/processed"
+  n_frames: 5
+  action_dim: 7
+  subset_names: "bridge_v2"
+  input_h: 256
+  input_w: 256
+
+eval:
+  pytorch_fid_dir: "./z_libraries/pytorch-fid"
+  stylegan_v_dir: "./z_libraries/stylegan-v"
+
+wandb_info:
+  entity: "" # your wandb entity
+  project: "Bridge"
+  name: "${model.dir_name}"
+  saved_run_id: "${output_dir}/wandb_run_id.json"
+  key: ""
+
+hydra:
+  run:
+    dir: "${output_dir}/${now:%Y-%m-%d}/${now:%H-%M-%S}"
+
+output_dir: "./bridge_checkpoints/${model.dir_name}"
+path_ckpt_latest: "${output_dir}/ckpt-latest.pth"
+path_ckpt_2nd_latest: "${output_dir}/ckpt-2nd-latest.pth"
+path_ckpt_phase1: "./bridge_checkpoints/bridge_phase1/ckpt_save/ckpt-latest.pth"

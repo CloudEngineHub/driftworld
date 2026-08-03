@@ -1,11 +1,11 @@
 """
-Evaluate visual quality metrics on the RT-1 validation set
+Evaluate visual quality metrics on the Bridge validation set
 This file supports launching on multiple single-GPU machine to speed up the evaluation process.
 
 Example: Launch
     python -m eval.eval_on_validation_shard \
-        --config-path configs/sample/rt1_release.yaml --step 29400 \
-        --rank 0 --world-size 1 --cfg-scale 2.5
+        --config-path configs/sample/bridge_release.yaml --step 55200 \
+        --rank 0 --world-size 8
 You can set a world size > 1 to use more than 1 GPU.
 After all ranks are done, run eval_on_validation_aggregate.py to aggregate the metrics.
 """
@@ -21,7 +21,7 @@ import torch
 import imageio.v2 as imageio
 from omegaconf import OmegaConf
 
-from datasets.rt1_dataloader import get_rt1_eval_dataloader
+from datasets.bridge_dataloader import get_bridge_eval_dataloader
 from encoders.vae_utils import decode_latents
 from encoders.vae_sd3 import VAE as SD3VAE
 from utils.eval_utils import set_seed, save_video, setup_model
@@ -70,8 +70,7 @@ def _config_resolved(config_path) -> str:
 
 
 def _build_resume_metadata(config_path, rank, world_size, actual_step, *, cfg_scale,
-                           n_history, fps, chunk_size, max_videos_per_shard,
-                           chunk_gen_frames):
+                           n_history, fps, chunk_size, chunk_gen_frames):
     return {
         "rank": int(rank),
         "world_size": int(world_size),
@@ -81,7 +80,6 @@ def _build_resume_metadata(config_path, rank, world_size, actual_step, *, cfg_sc
         "n_history": int(n_history),
         "fps": int(fps),
         "chunk_size": int(chunk_size),
-        "max_videos_per_shard": max_videos_per_shard,
         "chunk_gen_frames": int(chunk_gen_frames),
     }
 
@@ -250,8 +248,7 @@ def _cleanup_stem_outputs(stem: str, *, pred_videos_dir: Path, pred_frames_dir: 
 # ---------------------------------------------------------------------------
 
 def run_shard(cfg, step, rank, world_size, *, cfg_scale=3.0,
-              fps=4, chunk_size=16, max_videos_per_shard=None,
-              chunk_gen_frames=8, config_path=None):
+              fps=4, chunk_size=16, chunk_gen_frames=8, config_path=None):
     assert 0 <= rank < world_size, f"bad rank {rank} for world_size {world_size}"
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -260,12 +257,12 @@ def run_shard(cfg, step, rank, world_size, *, cfg_scale=3.0,
              f"(chunked autoregressive, GT re-anchor every {chunk_gen_frames} frames)")
     set_seed(cfg.train.seed + rank)
 
-    dataloader = get_rt1_eval_dataloader(cfg, split="val", batch_size=1)
+    # Dataloader is only used to get its dataset (we iterate dataset[idx] directly
+    # to keep per-clip memory bounded; mirrors the worldgym shard).
+    dataloader = get_bridge_eval_dataloader(cfg, split="val", batch_size=1)
     dataset = dataloader.dataset
     n_total = len(dataset)
     my_indices = [i for i in range(n_total) if i % world_size == rank]
-    if max_videos_per_shard is not None:
-        my_indices = my_indices[:max_videos_per_shard]
     stems_all = [Path(p).stem for p in dataset.video_paths]
     my_stems = [stems_all[i] for i in my_indices]
     log.info(f"[shard {rank}/{world_size}] dataset size {n_total}, "
@@ -307,7 +304,6 @@ def run_shard(cfg, step, rank, world_size, *, cfg_scale=3.0,
         rank, world_size, actual_step,
         cfg_scale=cfg_scale, n_history=n_history,
         fps=fps, chunk_size=chunk_size,
-        max_videos_per_shard=max_videos_per_shard,
         chunk_gen_frames=chunk_gen_frames,
     )
 
@@ -341,6 +337,7 @@ def run_shard(cfg, step, rank, world_size, *, cfg_scale=3.0,
         mp4_path = pred_videos_dir / f"{stem}.mp4"
         sample = dataset[ds_idx]
         actions = sample['action'].unsqueeze(0).to(device)            # (1, L, action_dim)
+
         video_pix = sample['video'].unsqueeze(0).to(device)           # (1, L, H, W, C) [0,1]
         model_input = sd3_vae.encode(video_pix)
 
@@ -365,7 +362,7 @@ def run_shard(cfg, step, rank, world_size, *, cfg_scale=3.0,
             torch.cuda.synchronize()
         gen_time = time.perf_counter() - _t0
 
-        # GT frames
+        # GT pixels for metrics + frame dumps: VAE-decode the encoded model input.
         with torch.no_grad():
             gt_pixels = decode_latents(model_input, chunk_size=chunk_size)  # (1, L, 3, H, W) [-1, 1]
 
@@ -382,7 +379,8 @@ def run_shard(cfg, step, rank, world_size, *, cfg_scale=3.0,
         # Save predicted MP4 (full clip, history+generated, in [-1, 1]).
         save_video(gen[0].cpu(), str(mp4_path), fps=fps, value_range=(-1, 1))
 
-        # Dump GENERATED frames (exclude the n_history GT seed frames)
+        # Dump GENERATED frames (exclude the n_history GT seed frames, so FID
+        # measures actual model output).
         gen_for_fid = _pixels_m11_to_hwc01_np(gen_g)
         gt_for_fid = _pixels_m11_to_hwc01_np(gt_g)
         _write_frames_flat(gen_for_fid, pred_frames_dir, stem)
@@ -471,8 +469,6 @@ def _build_parser():
     p.add_argument("--fps", type=int, default=4)
     p.add_argument("--chunk-size", type=int, default=16,
                    help="GT VAE decode chunk size")
-    p.add_argument("--max-videos-per-shard", type=int, default=None,
-                   help="Optional cap for smoke tests")
     p.add_argument("--chunk-gen-frames", type=int, default=8,
                    help="Frames generated per chunk before re-anchoring history on ground truth "
                         "(default 8).")
@@ -489,7 +485,6 @@ def main(argv=None):
         cfg_scale=args.cfg_scale,
         fps=args.fps,
         chunk_size=args.chunk_size,
-        max_videos_per_shard=args.max_videos_per_shard,
         chunk_gen_frames=args.chunk_gen_frames,
         config_path=args.config_path,
     )

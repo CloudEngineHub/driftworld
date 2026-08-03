@@ -46,3 +46,16 @@ dependencies:
       - termcolor
       - transformers
       - huggingface_hub
+
+      #  ------- Add these libraries to the above for -------
+      #  ------- bridge_driftworld / language_table_driftworld / rt1_driftworld -------
+      - "av>=12"
+      - decord2
+      - pytorchvideo==0.1.5
+      - pyarrow
+      - click
+      - ninja
+
+      #  ------- The two libraries below are only needed if you process the raw TFDS datasets -------
+      # - "tensorflow>=2.18"
+      # - tensorflow-datasets
